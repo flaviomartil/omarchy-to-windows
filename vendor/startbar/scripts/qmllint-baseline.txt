@@ -1,0 +1,88 @@
+IconResolver.qml	confusing-expression-statement	Expression statement has no obvious effect.
+Service.qml	import	Failed to import qs.Commons. Are your import paths set up properly?
+Service.qml	import	Failed to import qs.Ui. Are your import paths set up properly?
+Service.qml	import	PanelToolTip was not found. Did you add all imports and dependencies?
+Service.qml	import	Warnings occurred while importing module "qs.Commons":
+Service.qml	import	Warnings occurred while importing module "qs.Ui":
+Service.qml	missing-property	Could not find property "adjustment".
+Service.qml	missing-property	Could not find property "bottom".
+Service.qml	missing-property	Could not find property "edges".
+Service.qml	missing-property	Could not find property "gravity".
+Service.qml	missing-property	Could not find property "left".
+Service.qml	missing-property	Could not find property "right".
+Service.qml	missing-property	Could not find property "top".
+Service.qml	missing-property	Could not find property "window".
+Service.qml	missing-property	Member "accent" not found on type "QQuickColor"
+Service.qml	missing-property	Member "background" not found on type "QQuickColor"
+Service.qml	missing-property	Member "field" not found on type (component in Service.qml)::item with type QObject
+Service.qml	missing-property	Member "foreground" not found on type "QQuickColor"
+Service.qml	missing-property	Member "height" not found on type "QuickshellScreenInfo"
+Service.qml	missing-property	Member "key" not found on type "QQuickItem"
+Service.qml	missing-property	Member "mirrored" not found on type (component in Service.qml)::item with type QObject
+Service.qml	missing-property	Member "modelData" not found on type "QQuickItem"
+Service.qml	missing-property	Member "muted" not found on type "QQuickColor"
+Service.qml	missing-property	Member "name" not found on type "QuickshellScreenInfo"
+Service.qml	missing-property	Member "openLabel" not found on type (component in Service.qml)::item with type QObject
+Service.qml	missing-property	Member "popups" not found on type "QQuickColor"
+Service.qml	missing-property	Member "rect" not found on type "PopupAnchor"
+Service.qml	missing-property	Member "rows" not found on type (component in Service.qml)::item with type QObject
+Service.qml	missing-property	Member "rowsTop" not found on type (component in Service.qml)::item with type QObject
+Service.qml	missing-property	Member "updateAnchor" not found on type "PopupAnchor"
+Service.qml	missing-property	Member "urgent" not found on type "QQuickColor"
+Service.qml	missing-property	Member "value" not found on type (component in Service.qml)::item with type QObject
+Service.qml	missing-property	Member "width" not found on type "QuickshellScreenInfo"
+Service.qml	syntax	id declarations are only allowed in objects
+Service.qml	uncreatable-type	Type PanelWindow is not creatable.
+Service.qml	unqualified	Style
+Service.qml	unqualified	Util
+Service.qml	unqualified	barList
+Service.qml	unqualified	choiceEditor
+Service.qml	unqualified	choices
+Service.qml	unqualified	contextMenu
+Service.qml	unqualified	dockItem
+Service.qml	unqualified	dockItemKeys
+Service.qml	unqualified	dockRow
+Service.qml	unqualified	dockSettings
+Service.qml	unqualified	dockState
+Service.qml	unqualified	dragGhost
+Service.qml	unqualified	dragProbe
+Service.qml	unqualified	groupBlock
+Service.qml	unqualified	icon
+Service.qml	unqualified	listBox
+Service.qml	unqualified	listEditor
+Service.qml	unqualified	onAnchoring
+Service.qml	unqualified	panel
+Service.qml	unqualified	previewAnchor
+Service.qml	unqualified	previewPopup
+Service.qml	unqualified	previewState
+Service.qml	unqualified	rect
+Service.qml	unqualified	revealState
+Service.qml	unqualified	root
+Service.qml	unqualified	settingsColumn
+Service.qml	unqualified	settingsWindow
+Service.qml	unqualified	settle
+Service.qml	unqualified	sliderEditor
+Service.qml	unqualified	startButton
+Service.qml	unqualified	stepperEditor
+Service.qml	unqualified	switchEditor
+Service.qml	unqualified	textEditor
+Service.qml	unqualified	userDirsForSettings
+Service.qml	unresolved-type	Type rect is used but it is not resolved
+StartMenuView.qml	missing-property	Member "accent" not found on type "QQuickColor"
+StartMenuView.qml	missing-property	Member "background" not found on type "QQuickColor"
+StartMenuView.qml	missing-property	Member "foreground" not found on type "QQuickColor"
+StartMenuView.qml	missing-property	Member "popups" not found on type "QQuickColor"
+StartMenuView.qml	unqualified	Style
+StartMenuView.qml	unqualified	Util
+StartMenuView.qml	unqualified	allList
+StartMenuView.qml	unqualified	avatarMask
+StartMenuView.qml	unqualified	home
+StartMenuView.qml	unqualified	overlayColumn
+StartMenuView.qml	unqualified	pinGhost
+StartMenuView.qml	unqualified	pinGhostSettle
+StartMenuView.qml	unqualified	pinHoldTimer
+StartMenuView.qml	unqualified	pinProbe
+StartMenuView.qml	unqualified	pinnedGrid
+StartMenuView.qml	unqualified	recommendedGrid
+StartMenuView.qml	unqualified	resultList
+StartMenuView.qml	unqualified	startMenu

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "hyprlandCommit": "efb50993780079460b0cbed1363e2166a2de1d9f",
+  "upstream": {
+    "hyprbars": {"url": "https://github.com/hyprwm/hyprland-plugins", "commit": "7644cecdb947060682891a0db2a0cdc5c0b9e704"},
+    "startbar": {"url": "https://github.com/bmaltais/StartBar", "commit": "d94872b37610edd22db60ceeea6c8ff35c0525af", "version": "1.6.0"}
+  },
+  "packages": {
+    "hyprland": "0.56.2-4",
+    "aquamarine": "0.15.1-1",
+    "hyprutils": "0.14.2-1",
+    "hyprlang": "0.6.8-5",
+    "hyprcursor": "0.1.13-7",
+    "hyprgraphics": "0.5.1-4",
+    "omarchy": "4.0.5-1",
+    "quickshell": "0.3.2.r7.g2b4501a-1",
+    "qt6-base": "6.12.0-3",
+    "qt6-declarative": "6.12.0-1",
+    "qt6-svg": "6.12.0-1",
+    "qt6-wayland": "6.12.0-1"
+  }
+}

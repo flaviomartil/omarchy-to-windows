@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+
+
+def geometry(monitor, side, title_height=32, rect=None):
+    left, top, right, bottom = monitor["reserved"]
+    width = round(monitor["width"] / monitor["scale"]) - left - right
+    height = round(monitor["height"] / monitor["scale"]) - top - bottom
+    rx, ry, rw, rh = rect or ([6, 0, 6, 12] if side == "right" else [0, 0, 6, 12])
+    x, y = width * rx // 12, height * ry // 12
+    return [monitor["x"] + left + x + 1, monitor["y"] + top + y + title_height + 1], [
+        width * (rx + rw) // 12 - x - 2, height * (ry + rh) // 12 - y - title_height - 2
+    ]
+
+
+def query(name):
+    return json.loads(subprocess.check_output(["hyprctl", name, "-j"], text=True))
+
+
+def titlebar_height(window_class):
+    config = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+    patterns = config / "omarchy-to-windows/native-titlebars"
+    return 0 if re.fullmatch(patterns.read_text().strip(), window_class) else 32
+
+
+def dispatch(expression):
+    result = subprocess.run(
+        ["hyprctl", "dispatch", expression], capture_output=True, text=True, check=True
+    )
+    if result.stdout.strip() != "ok":
+        raise RuntimeError(result.stdout.strip() or result.stderr.strip())
+
+
+def place(target, at, size):
+    dispatch(f'hl.dsp.window.float({{ action = "enable", {target} }})')
+    dispatch(f'hl.dsp.window.resize({{ x = {size[0]}, y = {size[1]}, relative = false, {target} }})')
+    dispatch(f'hl.dsp.window.move({{ x = {at[0]}, y = {at[1]}, relative = false, {target} }})')
+
+
+def self_test():
+    monitor = dict(x=0, y=0, width=1920, height=1080, scale=1, reserved=[0, 0, 0, 48])
+    assert geometry(monitor, "left") == ([1, 33], [958, 998])
+    assert geometry(monitor, "right") == ([961, 33], [958, 998])
+    monitor.update(x=-1920, width=3840, height=2160, scale=2, reserved=[10, 30, 10, 48])
+    assert geometry(monitor, "right") == ([-959, 63], [948, 968])
+    monitor.update(x=0, width=1921, height=1080, scale=1, reserved=[0, 0, 0, 48])
+    assert geometry(monitor, "right") == ([961, 33], [959, 998])
+    assert geometry(monitor, "left", 0) == ([1, 1], [958, 1030])
+    monitor.update(width=1920, reserved=[0, 32, 0, 48])
+    assert geometry(monitor, "zone", rect=[6, 6, 6, 6]) == ([961, 565], [958, 466])
+    assert geometry(monitor, "zone", rect=[4, 0, 4, 12]) == ([641, 65], [638, 966])
+    for window_class in ["org.gnome.Nautilus", "chromium", "maestri-app"]:
+        assert titlebar_height(window_class) == 0
+    assert titlebar_height("foot") == 32
+    print("11 geometry and titlebar checks passed")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", choices=["left", "right", "zone", "down", "maximize", "minimize", "self-test"])
+    parser.add_argument("--window")
+    parser.add_argument("--rect", nargs=4, type=int)
+    args = parser.parse_args()
+    action = args.action
+    if args.window and not re.fullmatch(r"0x[0-9a-fA-F]+", args.window):
+        parser.error("invalid window address")
+    if action == "zone":
+        if not args.rect:
+            parser.error("zone requires --rect x y width height")
+        x, y, width, height = args.rect
+        if x < 0 or y < 0 or width <= 0 or height <= 0 or x + width > 12 or y + height > 12:
+            parser.error("rectangle must fit the 12 by 12 grid")
+    if action == "self-test":
+        self_test()
+        return
+    window = next((w for w in query("clients") if w["address"] == args.window), {}) if args.window else query("activewindow")
+    address = window.get("address", "")
+    if not re.fullmatch(r"0x[0-9a-fA-F]+", address):
+        return
+    target = f'window = "address:{address}"'
+    state_dir = Path(os.environ["XDG_RUNTIME_DIR"]) / "omarchy-to-windows-windows"
+    state_dir.mkdir(mode=0o700, exist_ok=True)
+    saved = state_dir / f"{address}.json"
+    if action == "maximize":
+        dispatch(f'hl.dsp.window.fullscreen({{ mode = "maximized", action = "set", {target} }})')
+    elif action == "minimize":
+        dispatch(f'hl.dsp.window.move({{ workspace = "special:minimized", follow = false, {target} }})')
+    elif action == "down":
+        if window["fullscreen"]:
+            dispatch(f'hl.dsp.window.fullscreen({{ mode = "maximized", action = "unset", {target} }})')
+            dispatch(f'hl.dsp.window.fullscreen({{ mode = "fullscreen", action = "unset", {target} }})')
+        elif saved.exists():
+            previous = json.loads(saved.read_text())
+            place(target, previous["at"], previous["size"])
+            saved.unlink()
+        else:
+            dispatch(f'hl.dsp.window.move({{ workspace = "special:minimized", follow = false, {target} }})')
+    else:
+        monitor = next(m for m in query("monitors") if m["id"] == window["monitor"])
+        if not saved.exists():
+            saved.write_text(json.dumps({"at": window["at"], "size": window["size"]}))
+        dispatch(f'hl.dsp.window.fullscreen({{ mode = "maximized", action = "unset", {target} }})')
+        dispatch(f'hl.dsp.window.fullscreen({{ mode = "fullscreen", action = "unset", {target} }})')
+        title_height = titlebar_height(window.get("class", ""))
+        at, size = geometry(monitor, action, title_height, args.rect if action == "zone" else None)
+        place(target, at, size)
+        if action == "zone":
+            dispatch(f'hl.dsp.focus({{ {target} }})')
+            dispatch(f'hl.dsp.window.alter_zorder({{ mode = "top", {target} }})')
+
+
+if __name__ == "__main__":
+    main()

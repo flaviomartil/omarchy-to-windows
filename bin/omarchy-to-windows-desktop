@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+import json
+import os
+from pathlib import Path
+import subprocess
+
+
+def main():
+    state = Path(os.environ["XDG_RUNTIME_DIR"]) / "omarchy-to-windows-desktop.json"
+    workspace = json.loads(subprocess.check_output(["hyprctl", "activeworkspace", "-j"], text=True))
+    if workspace["windows"] == 0 and state.exists():
+        target = json.loads(state.read_text())
+        if not isinstance(target, int) or target <= 0:
+            raise ValueError("invalid saved workspace")
+    else:
+        target = "empty"
+        if workspace["id"] <= 0:
+            return
+        state.write_text(json.dumps(workspace["id"]))
+        state.chmod(0o600)
+    expression = 'hl.dsp.focus({workspace="' + str(target) + '"})'
+    result = subprocess.check_output(["hyprctl", "dispatch", expression], text=True).strip()
+    if result != "ok":
+        raise RuntimeError(result)
+    if target != "empty":
+        state.unlink()
+
+
+if __name__ == "__main__":
+    main()

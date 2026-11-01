@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+[[ ${1:-} == omarchy-to-windows ]] || exit 0
+theme=Adwaita-dark
+[[ ! -d $HOME/.local/share/themes/Fluent-Windows-11 ]] || theme=Fluent-Windows-11
+gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+gsettings set org.gnome.desktop.interface gtk-theme "$theme"
+gsettings set org.gnome.desktop.interface font-name 'Inter 10'
+gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'

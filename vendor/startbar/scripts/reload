@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Put this checkout in front of you: restart your real shell so it loads the checkout's current files, and report what the plugin logged.
+# For after a change, when you want to see it on your own desktop (the test session, scripts/dev, is where changes are tried first).
+#
+#   scripts/reload [--check]
+#
+#   --check   only report whether your shell's plugin is this checkout
+#
+# This checkout is the plugin when ~/.config/omarchy/plugins/<id> is a link to it (CONTRIBUTING.md, "Development install"); the script
+# refuses otherwise, since a restart would load some other copy. The restart makes the bar blink and puts Previews and menus away; it
+# does not touch your windows, your settings or your Pins. Prints one line: reload ok branch@sha restart 4.1s plugin-errors 0
+set -euo pipefail
+
+repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+id=$(jq -r .id "$repo/manifest.json")
+installed=$HOME/.config/omarchy/plugins/$id
+for tool in jq omarchy omarchy-shell journalctl; do
+  command -v "$tool" >/dev/null || { echo "reload: $tool is not installed" >&2; exit 2; }
+done
+if [[ $(readlink -f "$installed" 2>/dev/null) != "$repo" ]]; then
+  echo "reload: $installed does not point at this checkout, so the shell would not load it." >&2
+  echo "        To point it here: ln -sfn \"$repo\" \"$installed\"  (CONTRIBUTING.md, \"Development install\")" >&2
+  exit 2
+fi
+here=$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")@$(git -C "$repo" rev-parse --short HEAD 2>/dev/null || echo "?")
+if [[ ${1:-} == --check ]]; then
+  echo "reload --check: your shell's plugin is this checkout ($here)"
+  exit 0
+fi
+
+started=$(date '+%Y-%m-%d %H:%M:%S')
+t0=$(date +%s.%N)
+omarchy restart shell >/dev/null 2>&1
+for _ in $(seq 1 60); do
+  [[ $(omarchy-shell shell ping 2>/dev/null) == ok ]] && break
+  sleep 0.5
+done
+took=$(awk -v a="$t0" -v b="$(date +%s.%N)" 'BEGIN { printf "%.1f", b - a }')
+sleep 2
+# What the plugin itself logged since the restart began, minus the shell's own note that it noticed the checkout change and quickshell's
+# note that a symlinked plugin directory (the usual dev setup) is outside the config folder.
+log=$(journalctl --user -t omarchy-shell --since "$started" --no-pager 2>/dev/null |
+  grep -F -e "$id" -e "$repo" -e "$installed" |
+  grep -v -F -e "Local plugin changed, reloading" -e "is outside of the config folder" || true)
+n=$(grep -c . <<<"$log" || true)
+if ! omarchy plugin list 2>/dev/null | grep -F "$id" | grep -q enabled; then
+  echo "reload FAILED: $id is not enabled after the restart" >&2
+  exit 1
+fi
+echo "reload $([[ $n -eq 0 ]] && echo ok || echo FAILED) $here restart ${took}s plugin-errors $n"
+[[ $n -eq 0 ]] || { echo "$log" | head -8 | cut -c1-220 | sed 's/^/  err: /' >&2; exit 1; }

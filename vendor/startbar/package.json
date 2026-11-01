@@ -1,0 +1,13 @@
+{
+  "name": "startbar",
+  "private": true,
+  "version": "1.6.0",
+  "description": "Checks for StartBar: Node tests for the pure JS modules and the test session's guard, plus the manifest, QML and shell-script checks.",
+  "scripts": {
+    "test": "node --test",
+    "lint:qml": "node scripts/qmllint-check.js",
+    "check": "node --test && omarchy plugin validate . && node scripts/qmllint-check.js && scripts/lint-sh.sh && scripts/lint-rules.sh",
+    "smoke": "scripts/smoke.sh",
+    "lint:sh": "scripts/lint-sh.sh"
+  }
+}

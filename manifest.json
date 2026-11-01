@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.flaviomartil.omarchy-to-windows",
+  "name": "Omarchy to Windows",
+  "version": "0.1.0",
+  "author": "Omarchy to Windows contributors",
+  "license": "MIT",
+  "description": "Windows-inspired dark desktop, taskbar interactions, and snap layouts.",
+  "kinds": ["service"],
+  "keepLoaded": true,
+  "entryPoints": {"service": "Service.qml"}
+}
