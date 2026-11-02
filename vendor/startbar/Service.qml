@@ -424,12 +424,18 @@ Item {
   // which returns the command to run; these only run it.
   function focusWindowAndWarp(address) {
     var command = DockHyprland.focusWindowAndWarp(address)
-    if (command) Quickshell.execDetached(command)
+    if (command) {
+      root.peekCommit()
+      root.peekRun(command)
+    }
   }
 
   function focusWindow(address) {
     var command = DockHyprland.focusWindow(address)
-    if (command) Quickshell.execDetached(command)
+    if (command) {
+      root.peekCommit()
+      root.peekRun(command)
+    }
   }
 
   function rescueWindows(addresses) {

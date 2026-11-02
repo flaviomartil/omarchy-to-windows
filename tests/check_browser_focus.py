@@ -67,6 +67,27 @@ def main():
     def window(app_class):
         return next((item for item in query("clients") if item["class"] == app_class), None)
 
+    subprocess.run(["hyprctl", "eval", "hl.config({ input = { resolve_binds_by_sym = true } })"], env=env, check=True)
+
+    def start_menu():
+        return json.loads(subprocess.check_output([
+            "omarchy-shell", "io.github.bmaltais.startbar", "layout",
+        ], env=env, text=True))["menus"]["start"]
+
+    def check_start_keys():
+        subprocess.run(["omarchy-shell", "io.github.bmaltais.startbar", "closeStartMenu"], env=env, check=True)
+        for key in ("Super_L", "Super_R"):
+            subprocess.run(["wtype", "-k", key], env=env, check=True)
+            time.sleep(0.8)
+            assert start_menu() is not None, key + " alone did not open Start"
+            subprocess.run(["wtype", "-k", key], env=env, check=True)
+            time.sleep(0.8)
+            assert start_menu() is None, key + " did not close Start"
+            subprocess.run(["wtype", "-P", key, "-k", "z", "-p", key], env=env, check=True)
+            time.sleep(0.8)
+            assert start_menu() is None, key + "+Z opened Start"
+        print("PASS: both Super keys toggle Start alone and leave shortcuts alone", flush=True)
+
     assert window("chromium") is None and window("omarchy-focus-terminal") is None
     assert not any(query("configerrors")), query("configerrors")
     assert len(query("monitors")) == 1, "Use one 1920x1080 output in the isolated session"
@@ -78,6 +99,7 @@ def main():
         temporary = Path(directory)
         with (temporary / "apps.log").open("w") as output:
             try:
+                check_start_keys()
                 page = temporary / "browser.html"
                 page.write_text('<!doctype html><title>Browser focus regression</title><style>html,body{background:#204080;margin:0;height:100%}</style>')
                 processes.append(subprocess.Popen([
@@ -104,6 +126,14 @@ def main():
                     pointer.stdin.flush()
                     assert pointer.stdout.readline().strip() == "ok", "Virtual pointer failed"
                     time.sleep(pause)
+
+                def click_taskbar(address):
+                    layout = json.loads(subprocess.check_output([
+                        "omarchy-shell", "io.github.bmaltais.startbar", "layout",
+                    ], env=env, text=True))
+                    item = next(item for item in layout["items"] if item["key"] == "window:" + address.removeprefix("0x"))
+                    point("click", round(item["x"] + item["width"] / 2),
+                          round(item["y"] + item["height"] / 2), 0.8)
 
                 def overlap_pixel(x=1000, y=500):
                     image = temporary / "overlap.png"
@@ -133,6 +163,17 @@ def main():
                 pixel = overlap_pixel()
                 assert pixel[0] > pixel[2] + 40, "Clicking the terminal did not raise it"
                 print("PASS: new Chromium window floats; hover preserves focus; clicks raise browser and terminal", flush=True)
+
+                click_taskbar(terminal_address)
+                wait_for(lambda: window("omarchy-focus-terminal")["workspace"]["name"] == "special:minimized")
+                click_taskbar(terminal_address)
+                wait_for(lambda: query("activewindow").get("address") == terminal_address)
+                assert window("omarchy-focus-terminal")["workspace"]["id"] == 1
+                click_taskbar(browser_address)
+                wait_for(lambda: query("activewindow").get("address") == browser_address)
+                pixel = overlap_pixel()
+                assert pixel[2] > pixel[0] + 40, "Taskbar did not raise the browser"
+                print("PASS: taskbar minimizes, restores and raises overlapping windows", flush=True)
 
                 dispatch('hl.dsp.focus({ window = "address:' + browser_address + '" })')
                 dispatch('hl.dsp.window.alter_zorder({ mode = "top", window = "address:' + browser_address + '" })')
@@ -169,12 +210,12 @@ def main():
 
                 native_maximize("double-click")
                 assert window("chromium")["fullscreen"] == 1
-                dispatch('hl.dsp.focus({ window = "address:' + terminal_address + '" })')
+                click_taskbar(terminal_address)
                 time.sleep(0.3)
                 assert query("activewindow")["address"] == terminal_address, "Activation did not focus the terminal"
                 pixel = overlap_pixel()
                 assert pixel[0] > pixel[2] + 40, ("Focused terminal remained behind the maximized browser", pixel)
-                point("click", 200, 300)
+                click_taskbar(browser_address)
                 assert query("activewindow")["address"] == browser_address
                 pixel = overlap_pixel()
                 assert pixel[2] > pixel[0] + 40, ("Clicking the browser did not raise it again", pixel)

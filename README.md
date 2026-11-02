@@ -37,6 +37,7 @@ The screenshots are real captures from the configured desktop, using public demo
 - A Windows-style Start menu with app search, pinned apps, an app list, and session controls.
 - Centered taskbar icons, app pinning, window grouping, and previews for apps with multiple windows.
 - Clicking the active taskbar item minimizes an app with one window. Clicking its minimized item restores and focuses it.
+- Taskbar and preview selections wait for pending preview operations, so a preview cannot return focus to the previous window after a click.
 - A bottom clock, with existing taskbar pins and app settings preserved.
 - Taskbar settings for icon size, alignment, grouping, previews, and auto-hide.
 - Existing top status widgets retained, including hardware, weather, network, audio, and tray widgets when installed.
@@ -153,7 +154,7 @@ These holds prevent normal package upgrades; they are not a guarantee against ex
 
 | Key | Action |
 | --- | --- |
-| `Win` | Start menu |
+| `Win` (left or right) | Start menu |
 | `Win+E` | File Explorer |
 | `Win+D` | Show desktop / return to previous workspace |
 | `Win+Left`, `Win+Right` | Snap to either half |
@@ -192,7 +193,7 @@ Restoring replaces the managed files with their saved copies. Save later edits t
 
 ## Source and verification
 
-The current source passed 14 bundle tests and 367 StartBar tests. The graphical checks described in [TESTING.md](TESTING.md) passed previously. Six existing upstream QML lint warnings and a missing vendored shell lint hook remain. A full reboot and another machine have not been tested.
+The current source passed 14 bundle tests and 369 StartBar tests. See [TESTING.md](TESTING.md) for graphical checks and their limits. Six existing upstream QML lint warnings and a missing vendored shell lint hook remain. A full reboot and another machine have not been tested.
 
 See [THIRD_PARTY.md](THIRD_PARTY.md) for source revisions, licenses, and screenshot context. The installable theme contains color definitions. Compiled binaries, standalone wallpaper files, user profiles, user shell settings, backup data, and credentials are excluded from the published source.
 

@@ -61,7 +61,8 @@ if hl.plugin.hyprbars then
 end
 
 local bindings = {
-  { "SUPER + SUPER_L", "Start menu", "omarchy-shell io.github.bmaltais.startbar startMenu", { release = true } },
+  { "SUPER_L", "Start menu", "omarchy-shell io.github.bmaltais.startbar startMenu", { release = true, ignore_mods = true } },
+  { "SUPER_R", "Start menu", "omarchy-shell io.github.bmaltais.startbar startMenu", { release = true, ignore_mods = true } },
   { "SUPER + E", "File Explorer", { omarchy = "nautilus" } },
   { "SUPER + D", "Show desktop", "omarchy-to-windows-desktop" },
   { "SUPER + LEFT", "Snap left", "omarchy-to-windows-window left" },
@@ -80,6 +81,8 @@ local bindings = {
   { "CTRL + ALT + DELETE", "Session menu", "omarchy-menu toggle system" },
   { "CTRL + SHIFT + ESCAPE", "Task Manager", { tui = "btop" } },
 }
+hl.unbind("SUPER + SUPER_L")
+hl.unbind("SUPER + SUPER_R")
 hl.unbind("SUPER + SHIFT + T")
 for _, binding in ipairs(bindings) do
   hl.unbind(binding[1])

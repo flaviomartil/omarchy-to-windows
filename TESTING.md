@@ -11,7 +11,7 @@ The bundle tests cover preservation of unrelated shell settings and taskbar pins
 
 Activation loads the installed Hyprbars binary explicitly before reloading the configuration. [Hyprland 0.56.2 caches its configured plugin paths](https://github.com/hyprwm/Hyprland/blob/v0.56.2/src/plugins/PluginSystem.cpp); unloading a plugin and reloading an unchanged path list does not load it again. The installer also writes the main Hyprland entry point after the remaining assets are ready.
 
-The StartBar suite contains 367 tests, including the minimize dispatch, command validation, window-metadata privacy checks, and diagnostic log regressions. Its upstream QML check currently reports six existing warnings on the pinned baseline; those warnings are also present in an unmodified checkout of the same revision. Do not treat that aggregate check as passing. The vendored shell lint wrapper also references a missing `.githooks/pre-commit`; direct Bash syntax checks passed for all 26 scripts, but ShellCheck was not run.
+The StartBar suite contains 369 tests, including the minimize dispatch, command validation, window-metadata privacy checks, and diagnostic log regressions. Two regressions run the QML focus handlers with pending preview work and check that a later preview restore cannot override the selected window. Its upstream QML check currently reports six existing warnings on the pinned baseline; those warnings are also present in an unmodified checkout of the same revision. Do not treat that aggregate check as passing. The vendored shell lint wrapper also references a missing `.githooks/pre-commit`; direct Bash syntax checks passed for all 26 scripts, but ShellCheck was not run.
 
 For the security-review delivery, all 14 bundle tests and all 367 StartBar tests passed.
 
@@ -20,6 +20,8 @@ The three privacy regressions execute `focusWindow`, `focusWindowAndWarp`, and `
 Four diagnostic regressions execute `scripts/hypr-events.sh` with a synthetic event source. They check permissions on new and existing logs, literal handling of a quote-containing filename, private default log and PID placement, and rejection of invalid runtime directories. The original permission and injection reproductions failed before the fix. The test processes run in disposable directories and only their own process groups are terminated. See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for the findings, coverage, static-analysis results and remaining limits; independent security approval remains pending.
 
 Graphical behavior is checked in a separate Hyprland session with a temporary home directory and virtual input. The checks include taskbar minimize/restore, maximize hover without stealing keyboard focus, all six snap layouts, keyboard opening and dismissal, outside clicks, native maximize, clicking overlapping floating windows, and native Wayland minimize requests. Application tab selection and reordering were also checked in an isolated Maestri profile.
+
+The browser regression also checks both Super keys with a virtual keyboard, including opening and closing Start with a standalone key and keeping Start closed after Super+Z. Its symbol-based keyboard setting applies only to the isolated test compositor. Taskbar clicks check minimize/restore and the visible stacking order when switching to and from a maximized browser.
 
 With a separate StartBar development session already running with one 1920x1080 output, run this regression from the repository root in your original desktop environment:
 
