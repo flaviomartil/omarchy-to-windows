@@ -15,6 +15,12 @@
 #include <hyprland/src/config/lua/types/LuaConfigColor.hpp>
 #include <hyprland/src/state/MonitorState.hpp>
 #include <hyprland/src/managers/fullscreen/FullscreenController.hpp>
+#include <hyprland/src/plugins/HookSystem.hpp>
+#include <hyprland/src/protocols/XDGShell.hpp>
+#include <hyprland/src/protocols/core/Compositor.hpp>
+#include <hyprland/src/render/ElementRenderer.hpp>
+#include <hyprland/src/desktop/state/ViewHitTester.hpp>
+#include <hyprland/src/desktop/view/Popup.hpp>
 
 #include <hyprutils/string/VarList.hpp>
 
@@ -31,6 +37,70 @@ extern "C" {
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {
     return HYPRLAND_API_VERSION;
+}
+
+static CFunctionHook* nativeGeometryHook = nullptr;
+static CFunctionHook* nativeInputHook = nullptr;
+static CFunctionHook* nativeBoxHook = nullptr;
+using UVFunction = void (*)(Render::IElementRenderer*, PHLWINDOW, SP<CWLSurfaceResource>, PHLMONITOR, bool, const Vector2D&, const Vector2D&, bool);
+using InputFunction = SP<CWLSurfaceResource> (*)(const Desktop::CViewHitTester*, const Vector2D&, PHLWINDOW, Vector2D&);
+using BoxFunction = std::optional<CBox> (*)(const Desktop::View::CWLSurface*);
+
+static std::optional<CBox> nativeGeometry(PHLWINDOW window) {
+    if (!window || window->m_isX11 || !window->m_xdgSurface || !window->m_isMapped)
+        return std::nullopt;
+    const auto geometry = window->m_xdgSurface->m_current.geometry;
+    const auto size = window->wlSurface()->resource()->m_current.size;
+    if (geometry.pos() == Vector2D{} || geometry.x < 0 || geometry.y < 0 || geometry.w <= 0 || geometry.h <= 0 || size.x <= 0 || size.y <= 0 ||
+        geometry.x + geometry.w > size.x || geometry.y + geometry.h > size.y)
+        return std::nullopt;
+    return geometry;
+}
+
+static void calculateNativeUV(Render::IElementRenderer* renderer, PHLWINDOW window, SP<CWLSurfaceResource> surface, PHLMONITOR monitor, bool main,
+                              const Vector2D& projected, const Vector2D& unscaled, bool misaligned) {
+    reinterpret_cast<UVFunction>(nativeGeometryHook->m_original)(renderer, window, surface, monitor, main, projected, unscaled, misaligned);
+    if (!main || !window || window->wlSurface()->resource() != surface)
+        return;
+    const auto geometry = nativeGeometry(window);
+    const auto size = surface->m_current.size;
+    if (!geometry)
+        return;
+
+    Vector2D topLeft, bottomRight{1, 1};
+    if (surface->m_current.viewport.hasSource) {
+        const auto buffer = surface->m_current.bufferSize;
+        if (buffer.x <= 0 || buffer.y <= 0)
+            return;
+        const auto source = surface->m_current.viewport.source;
+        topLeft = source.pos() / buffer;
+        bottomRight = (source.pos() + source.size()) / buffer;
+    }
+    const auto span = bottomRight - topLeft;
+    g_pHyprRenderer->m_renderData.primarySurfaceUVTopLeft = topLeft + geometry->pos() / size * span;
+    g_pHyprRenderer->m_renderData.primarySurfaceUVBottomRight = topLeft + (geometry->pos() + geometry->size()) / size * span;
+}
+
+static SP<CWLSurfaceResource> nativeSurfaceAt(const Desktop::CViewHitTester* tester, const Vector2D& pos, PHLWINDOW window, Vector2D& local) {
+    const auto found = reinterpret_cast<InputFunction>(nativeInputHook->m_original)(tester, pos, window, local);
+    const auto geometry = nativeGeometry(window);
+    if (!geometry || (window->m_popupHead && window->m_popupHead->at(pos)))
+        return found;
+    auto [surface, coordinates] = window->wlSurface()->resource()->at(pos - window->position(Desktop::View::IGeometric::GEOMETRIC_GOAL) + geometry->pos(), true);
+    local = coordinates;
+    return surface;
+}
+
+static std::optional<CBox> nativeSurfaceBox(const Desktop::View::CWLSurface* surface) {
+    auto box = reinterpret_cast<BoxFunction>(nativeBoxHook->m_original)(surface);
+    const auto window = Desktop::View::CWindow::fromView(surface->view());
+    const auto geometry = nativeGeometry(window);
+    if (box && geometry) {
+        box->translate(-geometry->pos());
+        box->w = window->wlSurface()->resource()->m_current.size.x;
+        box->h = window->wlSurface()->resource()->m_current.size.y;
+    }
+    return box;
 }
 
 static void onNewWindow(PHLWINDOW window) {
@@ -229,6 +299,20 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         throw std::runtime_error("[hb] Version mismatch");
     }
 
+    const auto hook = [&](const std::string& name, const std::string& prefix, const void* destination) {
+        const auto functions = HyprlandAPI::findFunctionsByName(PHANDLE, name);
+        const auto match = std::ranges::find_if(functions, [&](const auto& function) { return function.demangled.starts_with(prefix); });
+        if (match == functions.end())
+            throw std::runtime_error("[hb] Native window geometry function is unavailable: " + name);
+        auto result = HyprlandAPI::createFunctionHook(PHANDLE, match->address, destination);
+        if (!result || !result->hook())
+            throw std::runtime_error("[hb] Native window geometry hook failed: " + name);
+        return result;
+    };
+    nativeGeometryHook = hook("calculateUVForSurface", "Render::IElementRenderer::calculateUVForSurface(", reinterpret_cast<void*>(&calculateNativeUV));
+    nativeInputHook = hook("windowSurfaceAt", "Desktop::CViewHitTester::windowSurfaceAt(", reinterpret_cast<void*>(&nativeSurfaceAt));
+    nativeBoxHook = hook("getSurfaceBoxGlobal", "Desktop::View::CWLSurface::getSurfaceBoxGlobal(", reinterpret_cast<void*>(&nativeSurfaceBox));
+
     g_pGlobalState                    = makeUnique<SGlobalState>();
     g_pGlobalState->nobarRuleIdx      = Desktop::Rule::windowEffects()->registerEffect("hyprbars:no_bar");
     g_pGlobalState->barColorRuleIdx   = Desktop::Rule::windowEffects()->registerEffect("hyprbars:bar_color");
@@ -300,6 +384,11 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
+    for (auto hook : {nativeGeometryHook, nativeInputHook, nativeBoxHook})
+        if (hook)
+            HyprlandAPI::removeFunctionHook(PHANDLE, hook);
+    nativeGeometryHook = nativeInputHook = nativeBoxHook = nullptr;
+
     for (auto& m : State::monitorState()->monitors())
         m->m_scheduledRecalc = true;
 

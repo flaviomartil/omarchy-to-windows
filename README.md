@@ -28,6 +28,7 @@ The screenshots are real captures from the configured desktop, using public demo
 - Minimize, maximize/restore, and close buttons on Hyprbars title bars. Double-clicking the title bar toggles maximize.
 - Small pointer movements during a title-bar click stay clicks. Dragging a maximized Hyprbars window restores it with the title bar under the pointer.
 - Native title bars for GNOME apps, Chromium, and Maestri, avoiding a second set of controls.
+- Native Wayland content, compositor borders, and pointer coordinates stay aligned when GTK adds transparent resize margins.
 - Native Wayland maximize/restore buttons and title-bar double-clicks, including windows already open when the bundle is activated.
 - Native Wayland and XWayland minimize requests forwarded to the taskbar's minimized workspace.
 - Conversion of existing tiled windows during activation, including maximized and minimized windows while preserving those states.

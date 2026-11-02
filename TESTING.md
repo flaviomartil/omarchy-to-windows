@@ -23,6 +23,8 @@ Graphical behavior is checked in a separate Hyprland session with a temporary ho
 
 The browser regression also checks both Super keys with a virtual keyboard, including opening and closing Start with a standalone key and keeping Start closed after Super+Z. Its symbol-based keyboard setting applies only to the isolated test compositor. Taskbar clicks check minimize/restore and the visible stacking order when switching to and from a maximized browser.
 
+With the same isolated development session running and Hyprbars unloaded, run `python3 tests/check_native_geometry.py`. It loads the built plugin only in that session, opens a disposable libadwaita window, and checks horizontal and vertical pixel strips across its compositor bounds. The painted content must fill those bounds despite the native resize margins. A virtual pointer checks click coordinates and movement while a button is held; the window and plugin are removed afterward. It requires Python's GTK 4 and libadwaita bindings, Grim, ImageMagick, and the development pointer. This regression failed before the fix because the content started inside the outer border; correcting rendering alone also left pointer coordinates displaced.
+
 With a separate StartBar development session already running with one 1920x1080 output, run this regression from the repository root in your original desktop environment:
 
 ```bash
