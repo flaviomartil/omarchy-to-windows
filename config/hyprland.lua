@@ -2,7 +2,12 @@ local home = os.getenv("HOME")
 local config = os.getenv("XDG_CONFIG_HOME") or home .. "/.config"
 
 hl.config({
-  input = { follow_mouse = 0, float_switch_override_focus = 0 },
+  input = {
+    follow_mouse = 0,
+    float_switch_override_focus = 0,
+    natural_scroll = false,
+    touchpad = { natural_scroll = true },
+  },
   general = {
     gaps_in = 0,
     gaps_out = 0,
